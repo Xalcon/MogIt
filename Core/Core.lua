@@ -435,6 +435,38 @@ local SLOT_MODULES = {
 	[Enum.TransmogCollectionType["Paired"]] = "Artifact",
 }
 
+local CAT_TO_SLOT = {
+	[Enum.TransmogCollectionType["Head"]] = 1,
+	[Enum.TransmogCollectionType["Shoulder"]] = 3,
+	[Enum.TransmogCollectionType["Back"]] = 15,
+	[Enum.TransmogCollectionType["Chest"]] = 5,
+	[Enum.TransmogCollectionType["Shirt"]] = 4,
+	[Enum.TransmogCollectionType["Tabard"]] = 19,
+	[Enum.TransmogCollectionType["Wrist"]] = 9,
+	[Enum.TransmogCollectionType["Hands"]] = 10,
+	[Enum.TransmogCollectionType["Waist"]] = 6,
+	[Enum.TransmogCollectionType["Legs"]] = 7,
+	[Enum.TransmogCollectionType["Feet"]] = 8,
+	[Enum.TransmogCollectionType["Wand"]] = 16,
+	[Enum.TransmogCollectionType["OneHAxe"]] = 16,
+	[Enum.TransmogCollectionType["OneHSword"]] = 16,
+	[Enum.TransmogCollectionType["OneHMace"]] = 16,
+	[Enum.TransmogCollectionType["Dagger"]] = 16,
+	[Enum.TransmogCollectionType["Fist"]] = 16,
+	[Enum.TransmogCollectionType["Shield"]] = 17,
+	[Enum.TransmogCollectionType["Holdable"]] = 17,
+	[Enum.TransmogCollectionType["TwoHAxe"]] = 16,
+	[Enum.TransmogCollectionType["TwoHSword"]] = 16,
+	[Enum.TransmogCollectionType["TwoHMace"]] = 16,
+	[Enum.TransmogCollectionType["Staff"]] = 16,
+	[Enum.TransmogCollectionType["Polearm"]] = 16,
+	[Enum.TransmogCollectionType["Bow"]] = 16,
+	[Enum.TransmogCollectionType["Gun"]] = 16,
+	[Enum.TransmogCollectionType["Crossbow"]] = 16,
+	[Enum.TransmogCollectionType["Warglaives"]] = 16,
+	[Enum.TransmogCollectionType["Paired"]] = 16,
+ }
+
 mog.relevantCategories = {}
 
 function mog:TRANSMOG_SEARCH_UPDATED()
@@ -489,35 +521,33 @@ function mog:TRANSMOG_SEARCH_UPDATED()
 	local GetAppearanceSourceDrops = C_TransmogCollection.GetAppearanceSourceDrops
 	local bor = bit.bor
 	
-	for i = Enum.TransmogCollectionTypeMeta.MinValue, Enum.TransmogCollectionTypeMeta.MaxValue do
-		local name, isWeapon, canEnchant, canMainHand, canOffHand = C_TransmogCollection.GetCategoryInfo(i)
+	for categoryID = Enum.TransmogCollectionTypeMeta.MinValue, Enum.TransmogCollectionTypeMeta.MaxValue do
+		print(categoryID)
+		local name, isWeapon, canEnchant, canMainHand, canOffHand = C_TransmogCollection.GetCategoryInfo(categoryID)
 		if name then
-			name = SLOTS[i]
+			name = SLOTS[categoryID]
 			local db = db
 			if isWeapon then
 				mog.relevantCategories[name] = true
 			end
 			if SLOT_MODULES[i] then
-				db = _G["MogIt_"..SLOT_MODULES[i].."DB"]
+				db = _G["MogIt_"..SLOT_MODULES[categoryID].."DB"]
 			else
 				db = ArmorDB
 			end
 			db[name] = db[name] or {}
-			-- required to include all artifacts
-			local exclusionCategory
-			if canMainHand then
-				exclusionCategory = 2
-			elseif canOffHand then
-				exclusionCategory = 1
-			end
-			for i, appearance in ipairs(C_TransmogCollection.GetCategoryAppearances(i, exclusionCategory)) do
+
+			local slotID = CAT_TO_SLOT[categoryID]
+			local transmogLocation = TransmogUtil.GetTransmogLocation(slotID, Enum.TransmogType.Appearance, Enum.TransmogModification.Main);
+
+			for i, appearance in ipairs(C_TransmogCollection.GetCategoryAppearances(categoryID, transmogLocation)) do
 				if not appearance.isHideVisual then
 					local v = db[name][appearance.visualID] or {}
 					db[name][appearance.visualID] = v
 					if v[1] and v[1].sourceID then
 						db[name][appearance.visualID] = {}
 					end
-					for i, source in ipairs(GetAppearanceSources(appearance.visualID)) do
+					for i, source in ipairs(GetAppearanceSources(appearance.visualID, categoryID, transmogLocation)) do
 						local s = v[source.sourceID] or {}
 						v[source.sourceID] = s
 						s.sourceType = source.sourceType
